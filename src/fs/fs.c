@@ -1,3 +1,5 @@
+#include <config.h>
+
 #include "fs.h"
 
 #include <errno.h>

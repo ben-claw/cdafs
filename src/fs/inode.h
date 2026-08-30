@@ -1,7 +1,8 @@
 #ifndef _INODE_H_
 #define _INODE_H_
 
-#include "fuse.h"
+#include <fuse/fuse_lowlevel.h>
+
 #include "../cd.h"
 
 #if defined(__GNUC__) || defined(__clang__)

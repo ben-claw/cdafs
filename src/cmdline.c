@@ -1,3 +1,5 @@
+#include <config.h>
+
 #include "cmdline.h"
 
 #include <stddef.h>
@@ -5,7 +7,6 @@
 #include <stdlib.h>
 #include <unistd.h>
 
-#define FUSE_USE_VERSION 26
 #include <fuse/fuse_lowlevel.h>
 
 enum {

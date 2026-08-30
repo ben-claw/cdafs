@@ -2,7 +2,7 @@
 #define _FILE_H_
 
 #include <sys/stat.h>
-#include "fuse.h"
+#include <fuse/fuse_lowlevel.h>
 
 void fill_file_attr(struct stat *st, int track);
 

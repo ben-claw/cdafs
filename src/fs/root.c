@@ -1,3 +1,5 @@
+#include <config.h>
+
 #include "root.h"
 
 #include <errno.h>

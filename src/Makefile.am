@@ -6,10 +6,9 @@ sbin_PROGRAMS = mount.cdafs
 mount_cdafs_SOURCES = \
 	fs/file.h fs/file.c \
 	fs/fs.h fs/fs.c \
-	fs/fuse.h \
 	fs/inode.h \
 	fs/root.h fs/root.c \
-	ch.h cd.c \
+	cd.h cd.c \
 	cmdline.h cmdline.c \
 	main.c
 mount_cdafs_LDADD = -lfuse

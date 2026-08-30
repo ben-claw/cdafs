@@ -1,13 +1,15 @@
+#include <config.h>
+
 #include "cd.h"
 
-#include <fcntl.h>
 #include <errno.h>
-#include <stdio.h>
-#include <stdint.h>
-#include <unistd.h>
-#include <sys/ioctl.h>
+#include <fcntl.h>
 #include <linux/cdrom.h>
+#include <stdint.h>
+#include <stdio.h>
 #include <string.h>
+#include <sys/ioctl.h>
+#include <unistd.h>
 
 static int cdrom_fd;
 static __s64 disk_timestamp;

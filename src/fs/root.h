@@ -2,7 +2,7 @@
 #define _ROOT_H_
 
 #include <sys/stat.h>
-#include "fuse.h"
+#include <fuse/fuse_lowlevel.h>
 
 void fill_root_attr(struct stat *st);
 
