@@ -11,5 +11,5 @@ mount_cdafs_SOURCES = \
 	cd.h cd.c \
 	cmdline.h cmdline.c \
 	main.c
-mount_cdafs_LDADD = -lfuse
-mount_cdafs_CFLAGS = -Wall -D_FILE_OFFSET_BITS=64 -D_GNU_SOURCE
+mount_cdafs_LDADD =  @FUSE_LIBS@
+mount_cdafs_CFLAGS = -Wall @FUSE_CFLAGS@

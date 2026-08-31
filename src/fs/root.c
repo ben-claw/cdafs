@@ -40,16 +40,17 @@ static int name_to_track(const char *name) {
 void fill_root_attr(struct stat *st) {
 	//TODO: other fields?
 	memset(st, 0, sizeof(*st));
+
 	//st->st_dev
 	st->st_ino = FUSE_ROOT_ID;
 	st->st_mode = S_IFDIR | 0555; /* r-xr-xr-x */
 	st->st_nlink = 2;
 	//st->st_uid = /* TODO */
 	//st->st_gid = /* TODO */
-	//st->st_rdev /* Device number, if device. */
 	st->st_size = 0;
 	//st->st_blksize;	/* Optimal block size for I/O. */
 	st->st_blocks = 0;
+
 	//st->__time_t st_atime;
 	//st->__syscall_ulong_t st_atimensec;
 	//st->__time_t st_mtime;

@@ -43,21 +43,21 @@ static size_t min_sz(size_t a, size_t b){
 void fill_file_attr(struct stat *st, int track) {
 	//TODO: other fields?
 	memset(st, 0, sizeof(*st));
+
 	//st->st_dev =
 	st->st_ino = track_to_inode(track);
 	st->st_mode = S_IFREG | 0444; /* r--r--r-- */
 	st->st_nlink = 1;
 	//st->st_uid = /*TODO*/
 	//st->st_gid = /*TODO*/
-	//st->st_rdev =
 	st->st_size = WAV_HEADER_LEN + cdrom_track_len(track) * CD_AUDIO_FRAME_SIZE;
-	
+
 	/* Seems that everyone ignores this value. */
 	st->st_blksize = CD_AUDIO_FRAME_SIZE;
-	
+
 	/* Not quite correct but better than 0. */
 	st->st_blocks = (st->st_size + 511) / 512;
-	
+
 	//st->__time_t st_atime;
 	//st->__syscall_ulong_t st_atimensec;
 	//st->__time_t st_mtime;
