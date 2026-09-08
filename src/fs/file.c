@@ -146,6 +146,21 @@ static size_t fill_wav_header(
 	return slc;
 }
 
+static int read_block(struct cda_file_handle *fh, size_t block_num) {
+	int res = -1;
+
+	size_t f_num = block_num * FRAMES_IN_BLOCK;
+	size_t f_count = min_sz(FRAMES_IN_BLOCK, fh->track_len - f_num);
+
+	res = cdrom_read_frames(fh->track_num, f_num, fh->cached_block, f_count);
+	if (res < 0)
+		goto cleanup;
+
+	fh->cached_block_num = block_num;
+cleanup:
+	return res;
+}
+
 void fs_read(
 	fuse_req_t req,
 	fuse_ino_t ino,
@@ -186,20 +201,16 @@ void fs_read(
 	size_t data_offset = offset - WAV_HEADER_LEN;
 
 	while (to_send > 0){
-		int block_num = data_offset / BLOCK_SIZE;
-		int block_pos = data_offset % BLOCK_SIZE;
+		size_t block_num = data_offset / BLOCK_SIZE;
+		size_t block_pos = data_offset % BLOCK_SIZE;
 		size_t slc = min_sz(BLOCK_SIZE - block_pos, to_send);
 		
 		if (fh->cached_block_num != block_num) {
-			int res = cdrom_read_frames(fh->track_num, 
-				block_num * FRAMES_IN_BLOCK, 
-				fh->cached_block, 
-				FRAMES_IN_BLOCK);
+			int res = read_block(fh, block_num);
 			if (res < 0) {
 				fuse_reply_err(req, EIO);
 				goto cleanup;
 			}
-			fh->cached_block_num = block_num;
 		}
 		
 		DEBUG_PRINT("Coping data %ld\n", slc);
