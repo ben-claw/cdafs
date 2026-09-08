@@ -4,7 +4,6 @@
 
 #include <errno.h>
 #include <stddef.h>
-#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -12,6 +11,7 @@
 #include "inode.h"
 
 #include "../cd.h"
+#include "../debug.h"
 
 // return -1 for invalid names.
 static int name_to_track(const char *name) {
@@ -60,22 +60,23 @@ void fill_root_attr(struct stat *st) {
 }
 
 void fs_lookup(fuse_req_t req, fuse_ino_t parent, const char *name) {
-	//printf("fs_lookup(... parent=%ld, name=\"%s\"\n", parent, name);
+	DEBUG_BEGIN_FN();
+	DEBUG_PRINT("fs_lookup(... parent=%ld, name=\"%s\"\n", parent, name);
 	
 	struct fuse_entry_param entry;
 	int track;
 	
 	if (parent != FUSE_ROOT_ID) {
 		fuse_reply_err(req, ENOENT);
-		return;
+		goto cleanup;
 	}
 	
 	track = name_to_track(name);
-	//printf("track is %d\n", track);
+	DEBUG_PRINT("lookup track is %d\n", track);
 	
 	if (track < 0) {
 		fuse_reply_err(req, ENOENT);
-		return;
+		goto cleanup;
 	}
 	
 	entry.ino = track_to_inode(track);
@@ -83,7 +84,7 @@ void fs_lookup(fuse_req_t req, fuse_ino_t parent, const char *name) {
 	
 	if (entry.ino < 0) {
 		fuse_reply_err(req, ENOENT);
-		return;
+		goto cleanup;
 	}
 	
 	fill_file_attr(&entry.attr, track);
@@ -93,17 +94,24 @@ void fs_lookup(fuse_req_t req, fuse_ino_t parent, const char *name) {
 	entry.entry_timeout = 15.0;
 	
 	fuse_reply_entry(req, &entry);
+
+cleanup:
+	DEBUG_END_FN();
 }
 
 void fs_opendir(fuse_req_t req, fuse_ino_t ino, struct fuse_file_info *fi){
-	//printf("fs_opendir(... ino=%ld\n", ino);
+	DEBUG_BEGIN_FN();
+	DEBUG_PRINT("fs_opendir(... ino=%ld\n", ino);
 	
 	if (ino != FUSE_ROOT_ID) {
 		fuse_reply_err(req, ENOENT);
-		return;
+		goto cleanup;
 	}
 
 	fuse_reply_open(req, fi);
+
+cleanup:
+	DEBUG_END_FN();
 }
 
 // TODO should return "." and ".." too.
@@ -114,20 +122,21 @@ void fs_readdir(
 	off_t offset,
 	struct fuse_file_info *fi
 ) {
-	//printf("fs_readdir(... ino=%ld, size=%ld, offset=%ld\n", ino, size, offset);
+	DEBUG_BEGIN_FN();
+	DEBUG_PRINT("fs_readdir(... ino=%ld, size=%ld, offset=%ld\n", ino, size, offset);
 	
-	char *buf;
+	char *buf = NULL;
 	struct stat st;
 	size_t entsize;
 	
 	if (ino != FUSE_ROOT_ID) {
 		fuse_reply_err(req, ENOENT);
-		return;
+		goto cleanup;
 	}
 	
 	if (offset > cdrom_track_count()) {
 		fuse_reply_buf(req, NULL, 0);
-		return;
+		goto cleanup;
 	}
 	
 	if (offset == 0)
@@ -136,7 +145,7 @@ void fs_readdir(
 	buf = malloc(size);
 	if (!buf) {
 		fuse_reply_err(req, ENOMEM);
-		return;
+		goto cleanup;
 	}
 	
 	char name[] = "track000.wav";
@@ -155,13 +164,18 @@ void fs_readdir(
 		fuse_reply_buf(req, buf, entsize);
 	}
 
-	free(buf);
+cleanup:
+	if (buf)
+		free(buf);
+	DEBUG_END_FN();
 }
 
 void fs_releasedir(fuse_req_t req, fuse_ino_t ino, struct fuse_file_info *fi) {
-	//printf("fs_releasedir(... ino=%ld\n", ino);
+	DEBUG_BEGIN_FN();
+	DEBUG_PRINT("fs_releasedir(... ino=%ld\n", ino);
 	
 	//No opoerations required.
-	
 	fuse_reply_err(req, 0);
+
+	DEBUG_END_FN();
 }

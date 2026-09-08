@@ -4,13 +4,13 @@
 
 #include <errno.h>
 #include <stddef.h>
-#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
 #include "inode.h"
 
 #include "../cd.h"
+#include "../debug.h"
 
 enum {
 	FRAMES_IN_BLOCK = 75,
@@ -68,26 +68,27 @@ void fill_file_attr(struct stat *st, int track) {
 
 void fs_open(fuse_req_t req, fuse_ino_t ino, struct fuse_file_info *fi)
 {
-	//printf("fs_open(... ino=%ld\n", ino);
+	DEBUG_BEGIN_FN();
+	DEBUG_PRINT("fs_open(... ino=%ld\n", ino);
 	
 	struct cda_file_handle *fh;
 
 	int track = inode_to_track(ino);
 	if (track < 0) {
 		fuse_reply_err(req, ENOENT);
-		return;
+		goto cleanup;
 	}
 
 	// flags (with the exception of O_CREAT, O_EXCL, O_NOCTTY and O_TRUNC)
 	if ((fi->flags & O_ACCMODE) != O_RDONLY) {
 		fuse_reply_err(req, EACCES);
-		return;
+		goto cleanup;
 	}
 	
 	fh = malloc(sizeof(*fh));
 	if (!fh) {
 		fuse_reply_err(req, ENOMEM);
-		return;
+		goto cleanup;
 	}
 	
 	fh->track_num = track;
@@ -96,12 +97,15 @@ void fs_open(fuse_req_t req, fuse_ino_t ino, struct fuse_file_info *fi)
 	
 	if (fh->track_len < 0) {
 		fuse_reply_err(req, EIO);
-		return;
+		goto cleanup;
 	}
 	
 	fi->fh = (uint64_t)fh;
 
 	fuse_reply_open(req, fi);
+
+cleanup:
+	DEBUG_END_FN();
 }
 
 #define LE16(x) (x) & 0xff, (x)>> 8 & 0xff
@@ -133,7 +137,7 @@ static size_t fill_wav_header(
 	
 	size_t slc = min_sz(WAV_HEADER_LEN - *offset, *to_send);
 
-	//printf("fs_read(... sending header %ld\n", slc);
+	DEBUG_PRINT("Sending header %ld\n", slc);
 
 	memcpy(buf_pos, &header + *offset, slc); //TODO Check non-zero offsets
 
@@ -149,17 +153,18 @@ void fs_read(
 	off_t offset,
 	struct fuse_file_info *fi
 ) {
-	//printf("fs_read(... ino=%ld, size=%ld, offset=%ld\n", ino, size, offset);
+	DEBUG_BEGIN_FN();
+	DEBUG_PRINT("fs_read(... ino=%ld, size=%ld, offset=%ld\n", ino, size, offset);
 	
 	struct cda_file_handle *fh = (struct cda_file_handle*) fi->fh;
 	
-	char* buf;
+	char* buf = NULL;
 	size_t data_size = fh->track_len * CD_AUDIO_FRAME_SIZE;
 	size_t file_size = data_size + WAV_HEADER_LEN;
 
 	if (offset >= file_size) {
 		fuse_reply_buf(req, NULL, 0);
-		return;
+		goto cleanup;
 	}
 	
 	if (offset + size > file_size)
@@ -168,7 +173,7 @@ void fs_read(
 	buf = malloc(size);
 	if (!buf) {
 		fuse_reply_err(req, ENOMEM);
-		return;
+		goto cleanup;
 	}
 	
 	char* buf_pos = buf;
@@ -192,12 +197,12 @@ void fs_read(
 				FRAMES_IN_BLOCK);
 			if (res < 0) {
 				fuse_reply_err(req, EIO);
-				return;
+				goto cleanup;
 			}
 			fh->cached_block_num = block_num;
 		}
 		
-		//printf("fs_read(... sending data %ld\n", slc);
+		DEBUG_PRINT("Coping data %ld\n", slc);
 		memcpy(buf_pos, fh->cached_block + block_pos, slc);
 		
 		buf_pos += slc;
@@ -205,18 +210,24 @@ void fs_read(
 		to_send -= slc;
 	}
 	
-	//printf("fs_read(... buf prepared %ld\n", size);
-
+	DEBUG_PRINT("Sending buf %ld\n", size);
 	fuse_reply_buf(req, buf, size);
-	free(buf);
+
+cleanup:
+	if (buf)
+		free(buf);
+	DEBUG_END_FN();
 }
 
 void fs_release(fuse_req_t req, fuse_ino_t ino, struct fuse_file_info *fi) {
-	//printf("fs_release(... ino=%ld\n", ino);
+	DEBUG_BEGIN_FN();
+	DEBUG_PRINT("fs_release(... ino=%ld\n", ino);
 	
 	struct cda_file_handle *fh = (struct cda_file_handle*) fi->fh;
 	
 	free(fh);
 
 	fuse_reply_err(req, 0);
+
+	DEBUG_END_FN();
 }

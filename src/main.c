@@ -12,6 +12,7 @@
 
 #include "cd.h"
 #include "cmdline.h"
+#include "debug.h"
 #include "fs/fs.h"
 
 volatile static int main_terminated = 0;
@@ -36,9 +37,9 @@ static void init_signals(sigset_t *orig_mask) {
 }
 
 static void dump_args(const char *when, struct fuse_args *args) {
-	printf("%s : argc = %d\n", when, args->argc);
+	DEBUG_PRINT("%s : argc = %d\n", when, args->argc);
 	for (int i = 0; i < args->argc; i++) {
-		printf("argv[%d] = %s\n", i, args->argv[i]);
+		DEBUG_PRINT("\targv[%d] = %s\n", i, args->argv[i]);
 	}
 }
 
@@ -55,7 +56,7 @@ static int init_fuse(const struct commandline_options *options,
 	dump_args("Session", &session_args);
 	*session = fuse_lowlevel_new(&session_args, &fs, sizeof(fs), NULL);
 	if (session == NULL) {
-		printf("Error creating FUSE session\n");
+		fprintf(stderr, "Error creating FUSE session\n");
 		return 1;
 	}
 	
@@ -75,17 +76,18 @@ static int init_fuse(const struct commandline_options *options,
 	dump_args("Mount", &mount_args);
 	*chan = fuse_mount(options->mountpoint, &mount_args);
 	if (chan == NULL) {
-		printf("Error creating mountpoint at %s\n", options->mountpoint);
+		fprintf(stderr, "Error creating mountpoint at %s\n", options->mountpoint);
 		goto cleanup;
 	}
 	
 	// <fuse/fuse_lowlevel.h> Note: currently only a single channel may be 
 	// assigned. This may change in the future
 	fuse_session_add_chan(*session, *chan);
-	
-	res = fuse_daemonize(options->foreground);
+
+	// Foreground only in debug mode
+	res = fuse_daemonize(options->debug_mode);
 	if (res != 0) {
-		printf("Error fuse_daemonize(): %d\n", res);
+		fprintf(stderr, "Error fuse_daemonize(): %d\n", res);
 		goto cleanup;
 	}
 	
@@ -134,9 +136,10 @@ int main(int argc, char *argv[]) {
 				break;
 				
 			res = fuse_chan_recv(&chan, buf_data, buf_size);
-			//printf("Event recived, fd=%d size=%d/%ld\n", fd, res, buf_size);
-			if (res < 0){
-				printf("Error fuse_chan_recv(): %d\n", res);
+			DEBUG_PRINT("Event recived, fd=%d size=%d/%ld\n",
+				chan_fd, res, buf_size);
+			if (res < 0) {
+				fprintf(stderr, "Error fuse_chan_recv(): %d\n", res);
 				goto cleanup;
 			}
 			fuse_session_process(session, buf_data, res, chan);
@@ -146,7 +149,8 @@ int main(int argc, char *argv[]) {
 		} else if (res == -1 && errno == EINTR) {
 			continue; /* signal caught */
 		} else {
-			printf("Something strange happens!\n");
+			//This branch should be unreachable.
+			DEBUG_PRINT("Something strange happens!\n");
 		}
 	}
 	

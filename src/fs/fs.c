@@ -4,7 +4,6 @@
 
 #include <errno.h>
 #include <stddef.h>
-#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -15,14 +14,18 @@
 #include "root.h"
 
 #include "../cd.h"
+#include "../debug.h"
 
 static void fs_forget(fuse_req_t req, fuse_ino_t ino, unsigned long nlookup){
-	printf("fs_forget(...\n");
+	DEBUG_BEGIN_FN();
+	DEBUG_PRINT("fs_forget(...\n");
+	DEBUG_END_FN();
 }
 
 static void fs_statfs(fuse_req_t req, fuse_ino_t ino){
 	/* ino == 0 means "undefined" */
-	//printf("fs_statfs(... ino=%ld\n", ino);
+	DEBUG_BEGIN_FN();
+	DEBUG_PRINT("fs_statfs(... ino=%ld\n", ino);
 	
 	struct statvfs st;
 	
@@ -45,11 +48,14 @@ static void fs_statfs(fuse_req_t req, fuse_ino_t ino){
 	st.f_namemax = 12;
 	
 	fuse_reply_statfs(req, &st);
+	DEBUG_END_FN();
 }
 
 static void fs_getattr(fuse_req_t req, fuse_ino_t ino, struct fuse_file_info *fi){
+	DEBUG_BEGIN_FN();
+	DEBUG_PRINT("fs_getattr(... ino=%ld\n", ino);
+
 	struct stat st;
-	//printf("fs_getattr(... ino=%ld\n", ino);
 	
 	if (ino == FUSE_ROOT_ID){
 		fill_root_attr(&st);
@@ -58,28 +64,35 @@ static void fs_getattr(fuse_req_t req, fuse_ino_t ino, struct fuse_file_info *fi
 		fill_file_attr(&st, ino - FILES_ID_START);
 	} else {
 		fuse_reply_err(req, ENOENT);
-		return;
+		goto cleanup;
 	}
 	
 	fuse_reply_attr(req, &st, 15.0); //TODO:timeout
+
+cleanup:
+	DEBUG_END_FN();
 }
 
 static void fs_init (void *userdata, struct fuse_conn_info *conn){
-	printf("fs_init(...\n");
+	DEBUG_BEGIN_FN();
+	DEBUG_PRINT("fs_init(...\n");
+	DEBUG_END_FN();
 }
 
 static void fs_destroy (void *userdata){
-	printf("fs_destroy(...\n");
+	DEBUG_BEGIN_FN();
+	DEBUG_PRINT("fs_destroy(...\n");
+	DEBUG_END_FN();
 }
 
 /*static void fs_setxattr(fuse_req_t req, fuse_ino_t ino, const char *name, const char *value, size_t size, int flags){
-	printf("fs_setxattr(...\n");
+	DEBUG_PRINT("fs_setxattr(...\n");
 }
 static void fs_getxattr(fuse_req_t req, fuse_ino_t ino, const char *name, size_t size){
-	printf("fs_getxattr(...\n");
+	DEBUG_PRINT("fs_getxattr(...\n");
 }
 static void fs_listxattr(fuse_req_t req, fuse_ino_t ino, size_t size){
-	printf("fs_listxattr(...\n");
+	DEBUG_PRINT("fs_listxattr(...\n");
 }*/
 
 

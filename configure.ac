@@ -5,6 +5,14 @@ AC_INIT([CD Audio FileSystem], [0.1.0], [ben-claw@mail.ru], [cdafs])
 AM_INIT_AUTOMAKE([-Wall -Werror foreign])
 PKG_PROG_PKG_CONFIG
 
+AC_ARG_ENABLE([debug], [AS_HELP_STRING([--enable-debug], [enable debug mode])],
+	[],
+	[enable_debug=no]
+)
+AS_IF([test "x$enable_debug" == xyes],
+	[AC_DEFINE([ENABLE_DEBUG], [1], [Define if debud mode is enaled])]
+)
+
 AC_USE_SYSTEM_EXTENSIONS
 
 # Checks for programs.

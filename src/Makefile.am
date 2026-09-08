@@ -10,6 +10,7 @@ mount_cdafs_SOURCES = \
 	fs/root.h fs/root.c \
 	cd.h cd.c \
 	cmdline.h cmdline.c \
+	debug.h debug.c\
 	main.c
 mount_cdafs_LDADD =  @FUSE_LIBS@
 mount_cdafs_CFLAGS = -Wall @FUSE_CFLAGS@

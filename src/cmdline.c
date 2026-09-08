@@ -23,8 +23,9 @@ struct fuse_opt cdfs_help_options[] = {
 	 FUSE_OPT_KEY("--version",	KEY_VERSION),
 	 FUSE_OPT_KEY("-h",		KEY_HELP),
 	 FUSE_OPT_KEY("--help",		KEY_HELP),
-	 CMDLINE_OPT("-f",		foreground, 1),
-	 CMDLINE_OPT("--foreground",	foreground, 1),
+#ifdef ENABLE_DEBUG
+	CMDLINE_OPT("--debug",		debug_mode, 1),
+#endif
 	 FUSE_OPT_END
 };
 
@@ -77,7 +78,7 @@ void cmdline_parse(int argc, char *argv[], struct commandline_options *options) 
 	options->argv_0 = argv[0];
 	options->device = NULL;
 	options->mountpoint = NULL;
-	options->foreground = 0;
+	options->debug_mode = 0;
 
 	fuse_opt_parse(&args, options, cdfs_help_options, opt_proc);
 	if (options->device == NULL || options->mountpoint == NULL)
