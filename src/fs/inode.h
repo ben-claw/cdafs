@@ -16,7 +16,7 @@ enum {
 
 static int is_file_ino(fuse_ino_t ino) {
 	return (FILES_ID_START < ino) &&
-		(ino <= FILES_ID_START + cdrom_track_count());
+	        (ino <= FILES_ID_START + cdrom_track_count());
 }
 
 static fuse_ino_t track_to_inode(int trk) {

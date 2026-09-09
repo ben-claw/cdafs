@@ -25,7 +25,7 @@ extern char debug_depth;
 #define DEBUG_END_FN() \
 	do { } while (0)
 
-#  define DEBUG_PRINT(...) \
+#define DEBUG_PRINT(...) \
 	do { } while (0)
 
 #endif

@@ -35,14 +35,15 @@ static int check_disk_changed() {
 	if (res < 0)
 		goto cleanup;
 
-	DEBUG_PRINT("Checked for media chnged: diskts=%lld, lastts=%lld; chflag=%lld\n",
-		disk_timestamp, info.last_media_change, info.media_flags);
-	
+	DEBUG_PRINT
+	        ("Checked for media chnged: diskts=%lld, lastts=%lld; chflag=%lld\n",
+	         disk_timestamp, info.last_media_change, info.media_flags);
+
 	if (info.media_flags & MEDIA_CHANGED_FLAG) {
 		disk_timestamp = -1;
 		res = -1;
 	}
-	/*if (info.last_media_change > disk_timestamp)*/
+	/*if (info.last_media_change > disk_timestamp) */
 
 cleanup:
 	DEBUG_END_FN();
@@ -53,11 +54,12 @@ int cdrom_is_disk_changed() {
 	return (disk_timestamp < 0);
 }
 
-int cdrom_init(const char* name) {
+int cdrom_init(const char *name) {
 	DEBUG_BEGIN_FN();
 	DEBUG_PRINT("cdrom_init(... name=%s\n", name);
 
 	int res = -1;
+
 	struct cdrom_timed_media_change_info info = {
 		.last_media_change = 0,
 		.media_flags = 0
@@ -79,6 +81,7 @@ int cdrom_init(const char* name) {
 	DEBUG_PRINT("Tracks: %u - %u\n", tochdr.cdth_trk0, tochdr.cdth_trk1);
 
 	struct cdrom_tocentry entry;
+
 	for (int i = tochdr.cdth_trk0; i <= tochdr.cdth_trk1; i++) {
 		entry.cdte_track = i;
 		entry.cdte_format = CDROM_LBA;
@@ -89,7 +92,8 @@ int cdrom_init(const char* name) {
 		DEBUG_PRINT("Track %02u at %u\n", i, entry.cdte_addr.lba);
 	}
 
-	res = ioctl(cdrom_fd, CDROM_LAST_WRITTEN, &track_addr[tochdr.cdth_trk1]);
+	res = ioctl(cdrom_fd, CDROM_LAST_WRITTEN,
+	            &track_addr[tochdr.cdth_trk1]);
 	if (res < 0)
 		goto cleanup;
 	DEBUG_PRINT("Last track ends at %u\n", track_addr[tochdr.cdth_trk1]);
@@ -103,46 +107,50 @@ cleanup:
 
 int cdrom_track_count() {
 	int res = check_disk_changed();
+
 	if (res < 0)
 		return res;
 
 	return tochdr.cdth_trk1 - tochdr.cdth_trk0 + 1;
 }
 
-int cdrom_track_len(int track){
+int cdrom_track_len(int track) {
 	int res = check_disk_changed();
+
 	if (res < 0)
 		return res;
 
-	return track_addr[track] - track_addr[track-1];
+	return track_addr[track] - track_addr[track - 1];
 }
 
 int cdrom_frames_count() {
 	int res = check_disk_changed();
+
 	if (res < 0)
 		return res;
 
-	return track_addr[tochdr.cdth_trk1]/* + 1*/;
+	return track_addr[tochdr.cdth_trk1];
 }
 
-int cdrom_read_frames(int track, int frame, unsigned char* buf, int count){
+int cdrom_read_frames(int track, int frame, unsigned char *buf, int count) {
 	DEBUG_BEGIN_FN();
 	DEBUG_PRINT("cdrom_read_frames(... track=%d, frame=%d, count=%d\n",
-		track, frame, count);
+	            track, frame, count);
 
 	int res = check_disk_changed();
+
 	if (res < 0)
 		goto cleanup;
-	
+
 	track = (tochdr.cdth_trk0 - 1 + track) - 1;
-		
+
 	struct cdrom_read_audio ra = {
 		.addr.lba = track_addr[track] + frame, //TODO: check bounds
 		.addr_format = CDROM_LBA,
 		.nframes = count,
 		.buf = buf
 	};
-	
+
 	DEBUG_PRINT("Read %d frames from %d\n", ra.nframes, ra.addr.lba);
 	res = ioctl(cdrom_fd, CDROMREADAUDIO, &ra);
 	if (res < 0)
@@ -152,6 +160,3 @@ cleanup:
 	DEBUG_END_FN();
 	return res;
 }
-
-
-

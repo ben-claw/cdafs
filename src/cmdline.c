@@ -19,20 +19,20 @@ enum {
 	{ templ, offsetof(struct commandline_options, field), value }
 
 struct fuse_opt cdfs_help_options[] = {
-	 FUSE_OPT_KEY("-V",		KEY_VERSION),
-	 FUSE_OPT_KEY("--version",	KEY_VERSION),
-	 FUSE_OPT_KEY("-h",		KEY_HELP),
-	 FUSE_OPT_KEY("--help",		KEY_HELP),
+	FUSE_OPT_KEY("-v",		KEY_VERSION),
+	FUSE_OPT_KEY("--version",	KEY_VERSION),
+	FUSE_OPT_KEY("-h",		KEY_HELP),
+	FUSE_OPT_KEY("--help",		KEY_HELP),
 #ifdef ENABLE_DEBUG
 	CMDLINE_OPT("--debug",		debug_mode, 1),
 #endif
-	 FUSE_OPT_END
+	FUSE_OPT_END
 };
 
-static void fall_through_fuse_and_exit(char* arg0, char* arg1, int status) {
-	char *argv[] = {arg0, arg1, NULL};
-	struct fuse_args args =  FUSE_ARGS_INIT(2, argv);
-	
+static void fall_through_fuse_and_exit(char *arg0, char *arg1, int status) {
+	char *argv[] = { arg0, arg1, NULL };
+	struct fuse_args args = FUSE_ARGS_INIT(2, argv);
+
 	fflush(stdout);
 	dup2(1, 2); // 2>&1
 	fuse_lowlevel_new(&args, NULL, 0, NULL);
@@ -40,20 +40,23 @@ static void fall_through_fuse_and_exit(char* arg0, char* arg1, int status) {
 	exit(status);
 }
 
-static void print_version_and_exit(char* arg0, int status) {
+static void print_version_and_exit(char *arg0, int status) {
+
 	/***/
 	fall_through_fuse_and_exit(arg0, "--version", status);
 }
 
-static void print_help_and_exit(char* arg0, int status) {
+static void print_help_and_exit(char *arg0, int status) {
+
 	/***/
 	fall_through_fuse_and_exit(arg0, "--help", status);
 }
 
-static int opt_proc(void *data, const char *arg, int key, struct fuse_args *outargs) {
+static int opt_proc(void *data, const char *arg, int key,
+	            struct fuse_args *outargs) {
 	char *arg0 = outargs->argv[0];
 	struct commandline_options *options = data;
-	
+
 	switch (key) {
 	case KEY_VERSION:
 		print_version_and_exit(arg0, 0);
@@ -64,7 +67,7 @@ static int opt_proc(void *data, const char *arg, int key, struct fuse_args *outa
 			options->device = arg;
 		else if (options->mountpoint == NULL)
 			options->mountpoint = arg;
-		else 
+		else
 			print_help_and_exit(arg0, 1);
 		return 1;
 	default:

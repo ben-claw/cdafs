@@ -32,12 +32,12 @@ struct cda_file_handle {
 	unsigned char cached_block[BLOCK_SIZE];
 };
 
-static size_t min_sz(size_t a, size_t b){
-    if (a<b) {
-        return a;
-    } else {
-        return b;
-    }
+static size_t min_sz(size_t a, size_t b) {
+	if (a < b) {
+		return a;
+	} else {
+		return b;
+	}
 }
 
 void fill_file_attr(struct stat *st, int track) {
@@ -50,7 +50,8 @@ void fill_file_attr(struct stat *st, int track) {
 	st->st_nlink = 1;
 	//st->st_uid = /*TODO*/
 	//st->st_gid = /*TODO*/
-	st->st_size = WAV_HEADER_LEN + cdrom_track_len(track) * CD_AUDIO_FRAME_SIZE;
+	st->st_size =
+	        WAV_HEADER_LEN + cdrom_track_len(track) * CD_AUDIO_FRAME_SIZE;
 
 	/* Seems that everyone ignores this value. */
 	st->st_blksize = CD_AUDIO_FRAME_SIZE;
@@ -66,41 +67,40 @@ void fill_file_attr(struct stat *st, int track) {
 	//st->__syscall_ulong_t st_ctimensec;
 }
 
-void fs_open(fuse_req_t req, fuse_ino_t ino, struct fuse_file_info *fi)
-{
+void fs_open(fuse_req_t req, fuse_ino_t ino, struct fuse_file_info *fi) {
 	DEBUG_BEGIN_FN();
 	DEBUG_PRINT("fs_open(... ino=%ld\n", ino);
-	
+
 	struct cda_file_handle *fh;
 
 	int track = inode_to_track(ino);
+
 	if (track < 0) {
 		fuse_reply_err(req, ENOENT);
 		goto cleanup;
 	}
-
 	// flags (with the exception of O_CREAT, O_EXCL, O_NOCTTY and O_TRUNC)
 	if ((fi->flags & O_ACCMODE) != O_RDONLY) {
 		fuse_reply_err(req, EACCES);
 		goto cleanup;
 	}
-	
+
 	fh = malloc(sizeof(*fh));
 	if (!fh) {
 		fuse_reply_err(req, ENOMEM);
 		goto cleanup;
 	}
-	
+
 	fh->track_num = track;
 	fh->track_len = cdrom_track_len(track);
 	fh->cached_block_num = -1;
-	
+
 	if (fh->track_len < 0) {
 		fuse_reply_err(req, EIO);
 		goto cleanup;
 	}
-	
-	fi->fh = (uint64_t)fh;
+
+	fi->fh = (uint64_t) fh;
 
 	fuse_reply_open(req, fi);
 
@@ -112,7 +112,7 @@ cleanup:
 #define LE32(x) (x) & 0xff, (x)>> 8 & 0xff, (x)>> 16 & 0xff, (x)>> 24 & 0xff
 
 static size_t fill_wav_header(
-	char *buf_pos, 
+	char *buf_pos,
 	off_t *offset,
 	size_t *to_send,
 	size_t data_size
@@ -121,7 +121,7 @@ static size_t fill_wav_header(
 		'R', 'I', 'F', 'F',
 		LE32(data_size + WAV_HEADER_LEN - 8), // file size
 		'W', 'A', 'V', 'E',
-		
+
 		'f', 'm', 't', ' ',
 		LE32(16), // fmt chunk size
 		LE16(WAV_FORMAT),
@@ -130,11 +130,11 @@ static size_t fill_wav_header(
 		LE32(WAV_SAMPLE_RATE * WAV_CHANNELS * WAV_BITS_PER_SAMPLE / 8),
 		LE16(WAV_CHANNELS * WAV_BITS_PER_SAMPLE / 8),
 		LE16(WAV_BITS_PER_SAMPLE),
-		
+
 		'd', 'a', 't', 'a',
 		LE32(data_size) // data chunk size
 	};
-	
+
 	size_t slc = min_sz(WAV_HEADER_LEN - *offset, *to_send);
 
 	DEBUG_PRINT("Sending header %ld\n", slc);
@@ -152,7 +152,8 @@ static int read_block(struct cda_file_handle *fh, size_t block_num) {
 	size_t f_num = block_num * FRAMES_IN_BLOCK;
 	size_t f_count = min_sz(FRAMES_IN_BLOCK, fh->track_len - f_num);
 
-	res = cdrom_read_frames(fh->track_num, f_num, fh->cached_block, f_count);
+	res = cdrom_read_frames(fh->track_num, f_num, fh->cached_block,
+	                        f_count);
 	if (res < 0)
 		goto cleanup;
 
@@ -169,11 +170,12 @@ void fs_read(
 	struct fuse_file_info *fi
 ) {
 	DEBUG_BEGIN_FN();
-	DEBUG_PRINT("fs_read(... ino=%ld, size=%ld, offset=%ld\n", ino, size, offset);
-	
-	struct cda_file_handle *fh = (struct cda_file_handle*) fi->fh;
-	
-	char* buf = NULL;
+	DEBUG_PRINT("fs_read(... ino=%ld, size=%ld, offset=%ld\n",
+	            ino, size, offset);
+
+	struct cda_file_handle *fh = (struct cda_file_handle *)fi->fh;
+
+	char *buf = NULL;
 	size_t data_size = fh->track_len * CD_AUDIO_FRAME_SIZE;
 	size_t file_size = data_size + WAV_HEADER_LEN;
 
@@ -181,46 +183,48 @@ void fs_read(
 		fuse_reply_buf(req, NULL, 0);
 		goto cleanup;
 	}
-	
+
 	if (offset + size > file_size)
 		size = file_size - offset;
-	
+
 	buf = malloc(size);
 	if (!buf) {
 		fuse_reply_err(req, ENOMEM);
 		goto cleanup;
 	}
-	
-	char* buf_pos = buf;
+
+	char *buf_pos = buf;
 	size_t to_send = size;
-	
+
 	if (offset < WAV_HEADER_LEN) {
-		buf_pos += fill_wav_header(buf_pos, &offset, &to_send, data_size);
+		buf_pos +=
+			fill_wav_header(buf_pos, &offset, &to_send, data_size);
 	}
-	
+
 	size_t data_offset = offset - WAV_HEADER_LEN;
 
-	while (to_send > 0){
+	while (to_send > 0) {
 		size_t block_num = data_offset / BLOCK_SIZE;
 		size_t block_pos = data_offset % BLOCK_SIZE;
 		size_t slc = min_sz(BLOCK_SIZE - block_pos, to_send);
-		
+
 		if (fh->cached_block_num != block_num) {
 			int res = read_block(fh, block_num);
+
 			if (res < 0) {
 				fuse_reply_err(req, EIO);
 				goto cleanup;
 			}
 		}
-		
+
 		DEBUG_PRINT("Coping data %ld\n", slc);
 		memcpy(buf_pos, fh->cached_block + block_pos, slc);
-		
+
 		buf_pos += slc;
 		data_offset += slc;
 		to_send -= slc;
 	}
-	
+
 	DEBUG_PRINT("Sending buf %ld\n", size);
 	fuse_reply_buf(req, buf, size);
 
@@ -233,9 +237,9 @@ cleanup:
 void fs_release(fuse_req_t req, fuse_ino_t ino, struct fuse_file_info *fi) {
 	DEBUG_BEGIN_FN();
 	DEBUG_PRINT("fs_release(... ino=%ld\n", ino);
-	
-	struct cda_file_handle *fh = (struct cda_file_handle*) fi->fh;
-	
+
+	struct cda_file_handle *fh = (struct cda_file_handle *)fi->fh;
+
 	free(fh);
 
 	fuse_reply_err(req, 0);
