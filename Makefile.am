@@ -1,1 +1,2 @@
 SUBDIRS = src
+EXTRA_DIST = README.md README_RU.md
